@@ -1,5 +1,5 @@
 from circleapi import UserToken, setup_queue_logging as circleapi_log_queue
-from circledb import update_beatmap_threadpool, setup_queue_logging as circledb_log_queue
+from circledb import update_beatmap_threadpool, setup_queue_logging as circledb_log_queue, update_lb_multithread
 from dotenv import dotenv_values
 import shutil
 
@@ -23,10 +23,11 @@ if __name__ == "__main__":
     )
 
     # Setup empty db
-    shutil.copy("../ressources/empty_data.db", DB_PATH)
+    # shutil.copy("../ressources/empty_data.db", DB_PATH)
 
     # Update db content
-    update_beatmap_threadpool(token, DB_PATH, skip_if_in_db=True)
+    # update_beatmap_threadpool(token, DB_PATH, skip_if_in_db=True)
+    update_lb_multithread(token, DB_PATH, "osu", "global", skip_if_in_db=True)
 
     log_db.stop()
     log_api.stop()
