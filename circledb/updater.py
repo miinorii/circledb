@@ -2,6 +2,7 @@ import concurrent.futures
 from circleapi import ApiV2, UserToken, ExternalApi, GameMode, ScoreScope
 from .circledb import CircleDB
 from .logger import logger
+import gc
 
 
 def update_beatmap_threadpool(token: UserToken, db_path: str, skip_if_in_db=True):
@@ -59,7 +60,7 @@ def update_lb_multithread(token: UserToken,
                 completed = 0
                 total = len(futures_to_map_id)
                 for future in concurrent.futures.as_completed(futures_to_map_id):
-                    map_id = futures_to_map_id[future]
+                    map_id = futures_to_map_id.pop(future)
                     completed += 1
                     try:
                         data = future.result()
@@ -71,4 +72,5 @@ def update_lb_multithread(token: UserToken,
                         if completed % 32 == 0 or completed == total:
                             orm.save()
                             logger.info(f"[  \033[1;33m..\033[0m  ] Completion: {completed}/{total}")
+                            gc.collect()
     return failed
