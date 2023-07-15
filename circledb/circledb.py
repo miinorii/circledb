@@ -237,6 +237,18 @@ class CircleDB:
             data = self.cur.fetchall()
         return set(x[0] for x in data)
 
+    def get_lb_in_db(self, scope: Literal["global", "country"], country_code: str | None = None) -> set[int]:
+        with self.lock:
+            match scope:
+                case "global":
+                    self.cur.execute("select distinct beatmap_id from global_lb")
+                case "country":
+                    self.cur.execute(f"select distinct beatmap_id from country_lb where country_code='{country_code}'")
+                case _:
+                    raise NotImplementedError
+            data = self.cur.fetchall()
+        return set(x[0] for x in data)
+
     def get_best_rank(self,
                       country_code: list[str] | None = None,
                       rank: list[int] | None = None) -> list[DBBestRank]:

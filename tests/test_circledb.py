@@ -19,6 +19,13 @@ BEST_RANK_QUERY = 'insert into best_rank values (?,?,?,?)'
 
 
 class TestCircleDB(unittest.TestCase):
+    def test_get_lb_in_db(self):
+        with CircleDB(SAMPLE_TEST_DB) as orm:
+            data1 = orm.get_lb_in_db("global")
+            data2 = orm.get_lb_in_db("country", "US")
+        self.assertIn(53, data1)
+        self.assertIn(53, data2)
+
     def test_get_beatmap_in_db(self):
         with CircleDB(SAMPLE_TEST_DB) as orm:
             data = orm.get_beatmap_in_db()
