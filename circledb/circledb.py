@@ -196,7 +196,7 @@ class CircleDB:
         for index, score in enumerate(lb.scores):
             self.add_score(score, lb.args.beatmap_id, on_conflict=on_conflict)
             rank = index + 1
-            match lb.args.scope:
+            match lb.args.type:
                 case "global":
                     args = (lb.args.beatmap_id, rank, score.id)
                     match on_conflict:
@@ -274,6 +274,12 @@ class CircleDB:
             rank=rank,
             score_id=sid) for cc, bid, rank, sid in data]
         return data
+
+    def get_score_id_missing_from_best_rank_requiring_manual_check(self, country_code: str) -> list[int]:
+        with self.lock:
+            self.cur.execute(f"select score_id from country_lb where rank=1 and country_code=? and score_id not in (select score_id from global_lb) and score_id not in (select score_id from best_rank)", [country_code])
+            data = self.cur.fetchall()
+        return [x[0] for x in data]
 
     def get_map_checksum_out_of_country_top100(self, country_code: str) -> list[str]:
         with self.lock:
