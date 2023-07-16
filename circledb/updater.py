@@ -1,11 +1,12 @@
 import concurrent.futures
 from circleapi import ApiV2, UserToken, ExternalApi, GameMode, ScoreScope
+from .models import DBBestRank
 from .circledb import CircleDB
 from .logger import logger
 import gc
 
 
-def update_beatmap_threadpool(token: UserToken, db_path: str, skip_if_in_db=True):
+def update_beatmap_threadpool(token: UserToken, db_path: str, skip_if_in_db=True, max_threads=8):
     maps_id = ExternalApi.get_ranked_and_loved_ids()
     with CircleDB(db_path) as orm:
         if skip_if_in_db:
@@ -13,7 +14,7 @@ def update_beatmap_threadpool(token: UserToken, db_path: str, skip_if_in_db=True
             maps_id = list(set(maps_id).difference(maps_in_db))
 
         with ApiV2(token) as api:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="pool") as pool:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads, thread_name_prefix="pool") as pool:
                 futures = {}
                 while len(maps_id) > 0:
                     current_batch = [maps_id.pop() for _ in range(50) if len(maps_id) > 0]
@@ -40,7 +41,8 @@ def update_lb_multithread(token: UserToken,
                           db_path: str,
                           mode: GameMode,
                           scope: ScoreScope,
-                          skip_if_in_db=True) -> list[int]:
+                          skip_if_in_db=True,
+                          max_threads=8) -> list[int]:
     maps_id = ExternalApi.get_ranked_and_loved_ids()
     with ApiV2(token) as api:
         country_code = api.get_own_data().country.code
@@ -49,7 +51,7 @@ def update_lb_multithread(token: UserToken,
                 lb_in_db = orm.get_lb_in_db(scope, country_code)
                 maps_id = list(set(maps_id).difference(lb_in_db))
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="pool") as pool:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads, thread_name_prefix="pool") as pool:
                 futures_to_map_id = {
                     pool.submit(
                         api.get_beatmap_scores,
@@ -76,3 +78,15 @@ def update_lb_multithread(token: UserToken,
                             logger.info(f"[  \033[1;33m..\033[0m  ] Completion: {completed}/{total}")
                             gc.collect()
     return failed
+
+
+def update_country_lb_from_global_lb(db_path: str):
+    with CircleDB(db_path) as orm:
+        orm.update_country_lb_top_from_global_lb(on_conflict="replace")
+        orm.save()
+
+
+def update_best_rank_from_lb(db_path: str):
+    with CircleDB(db_path) as orm:
+        orm.update_best_rank_from_lb(on_conflict="replace")
+        orm.save()
