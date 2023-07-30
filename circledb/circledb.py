@@ -38,7 +38,7 @@ class CircleDB:
             logger.info(f"[  \033[32mOK\033[0m  ] Inserted {total_element} elements")
             self.queue = {}
 
-    def update_country_lb_top_from_global_lb(self, on_conflict: Literal["error", "ignore", "replace"]="error"):
+    def update_country_lb_from_global_lb(self, on_conflict: Literal["error", "ignore", "replace"]="error"):
         match on_conflict:
             case "ignore":
                 conflict = "or ignore"
@@ -47,7 +47,19 @@ class CircleDB:
             case _:
                 conflict = ""
 
-        query = f"insert {conflict} into country_lb select user.country_code, global_lb.beatmap_id, 1 as 'rank', score.id from global_lb, score, user where global_lb.score_id = score.id and score.user_id = user.id group by global_lb.beatmap_id, user.country_code having min(global_lb.rank)"
+        query = f"""
+        insert {conflict} into country_lb
+        select 
+            user.country_code, 
+            score.beatmap_id, 
+            rank() over (
+                partition by global_lb.beatmap_id, user.country_code order by global_lb.rank asc
+            ) as rank,	
+            score.id 
+        from global_lb
+            inner join score on score.id = global_lb.score_id
+            inner join user on user.id = score.user_id
+        """
         self.add_to_queue(query, tuple())
 
     def update_best_rank_from_lb(self, on_conflict: Literal["error", "ignore", "replace"]="error"):
@@ -59,7 +71,16 @@ class CircleDB:
             case _:
                 conflict = ""
 
-        query = f"insert {conflict} into best_rank select country_code, global_lb.beatmap_id, global_lb.rank, global_lb.score_id from country_lb, global_lb where global_lb.score_id = country_lb.score_id and country_lb.rank = 1"
+        query = f"""
+        insert {conflict} into best_rank 
+        select 
+            country_code, global_lb.beatmap_id, global_lb.rank, global_lb.score_id 
+        from 
+            country_lb, global_lb 
+        where 
+            global_lb.score_id = country_lb.score_id 
+            and country_lb.rank = 1
+        """
         self.add_to_queue(query, tuple())
 
     def add_beatmapset(self, beatmapset: Beatmapset, on_conflict: Literal["error", "ignore", "replace"]="error"):
@@ -275,9 +296,32 @@ class CircleDB:
             score_id=sid) for cc, bid, rank, sid in data]
         return data
 
-    def get_score_id_missing_from_best_rank_requiring_manual_check(self, country_code: str) -> list[int]:
+    def get_score_id_needing_manual_best_rank_check(self, country_code: str) -> list[int]:
+        query = """
+        select 
+            score_id 
+        from country_lb 
+        where 
+            rank=1 
+            and country_code=? 
+            and score_id not in (select score_id from global_lb) 
+            and score_id not in (select score_id from best_rank)
+        """
         with self.lock:
-            self.cur.execute(f"select score_id from country_lb where rank=1 and country_code=? and score_id not in (select score_id from global_lb) and score_id not in (select score_id from best_rank)", [country_code])
+            self.cur.execute(query, [country_code])
+            data = self.cur.fetchall()
+        return [x[0] for x in data]
+
+    def get_missing_beatmap_id_from_best_rank(self, country_code: str) -> list[int]:
+        query = """
+        select id from beatmap where id not in (
+            select beatmap_id 
+            from best_rank 
+            where country_code = ?
+        )
+        """
+        with self.lock:
+            self.cur.execute(query, [country_code])
             data = self.cur.fetchall()
         return [x[0] for x in data]
 
