@@ -26,11 +26,20 @@ Database schema
 - Users
 - Country best rank per beatmap
 
-Requirement
+Installation
 -----------
 
 circledb require [circleapi](https://github.com/miinorii/circleapi) to be installed.
 
+```bash
+$ pip install circleapi
+```
 
+Development setup
+```bash
+$ git clone https://github.com/miinorii/circledb.git
+$ cd circleapi
+$ pip install -e .
+```
 
 
