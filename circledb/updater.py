@@ -1,7 +1,10 @@
 import concurrent.futures
 from circleapi import ApiV2, GameMode, ScoreScope, Score, BeatmapScores, Beatmaps
+from circleutils import OSUFile
+import tarfile
 from .circledb import CircleDB, DBBestRank
 from .logger import logger
+import polars as pl
 
 
 def update_beatmap_threadpool(api: ApiV2,
@@ -116,3 +119,66 @@ def update_best_rank_from_score_id_threadpool(api: ApiV2,
                     orm.save()
                     logger.info(f"[  \033[1;33m..\033[0m  ] Completion: {completed}/{total}")
     return failed
+
+
+def update_spinner_from_monthly_dump(dump_path: str, orm: CircleDB, id_filter):
+    mods_combination = [
+        ["DT", "HR"],
+        ["EZ", "DT"],
+        ["DT"],
+        ["HR"],
+        ["EZ"],
+        []
+    ]
+
+    maps_df_list = []
+    with tarfile.open(dump_path, "r:bz2") as tar:
+        for i, file in enumerate(tar):
+            if file.isdir():
+                continue
+
+            map_id = int(file.name.split("/")[-1].split(".")[0])
+
+            if map_id not in id_filter:
+                continue
+
+            content = tar.extractfile(file)
+            beatmap = OSUFile.read(content)
+
+            spinners = beatmap.get_spinner_data(mods_combination)
+            combo = beatmap.get_combo_data()
+
+            spinner_at = combo.at_combo[beatmap.hit_objects.spinner_mask]
+
+            to_concat = []
+            for data in spinners:
+                spinners_df = pl.DataFrame({
+                    "length": data.length,
+                    "max_rot": data.max_rot,
+                    "leeway": data.leeway,
+                    "amount": data.amount,
+                    "extra_100": data.extra_100,
+                    "odd": data.odd,
+                    "accel_adjusted": data.accel_adjusted
+                })
+                spinners_df = spinners_df.select(
+                    pl.lit(spinner_at).alias("at_combo"),
+                    pl.lit("DT" in data.mods).alias("DT"),
+                    pl.lit("HR" in data.mods).alias("HR"),
+                    pl.lit("EZ" in data.mods).alias("EZ"),
+                    pl.all()
+                )
+                to_concat.append(spinners_df)
+            df = pl.concat(to_concat)
+            df = df.select(
+                pl.lit(map_id).alias("id").cast(pl.Int64),
+                pl.all()
+            )
+            maps_df_list.append(df)
+    data_df = pl.concat(maps_df_list)
+    data_as_dicts = data_df.to_dicts()
+    sql_args = []
+    for data in data_as_dicts:
+        sql_args.append(list(data.values()))
+    orm.cur.executemany("insert into spinner values(?,?,?,?,?,?,?,?,?,?,?,?)", sql_args)
+    orm.save()

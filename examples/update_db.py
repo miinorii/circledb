@@ -2,6 +2,7 @@ from circleapi import UserToken, ApiV2, ExternalApi, setup_queue_logging as circ
 from circledb import (
     CircleDB, update_beatmap_threadpool, DBBestRank,
     update_lb_threadpool, update_best_rank_from_score_id_threadpool,
+    update_spinner_from_monthly_dump,
     setup_queue_logging as circledb_log_queue
 )
 from dotenv import dotenv_values
@@ -14,6 +15,7 @@ if __name__ == "__main__":
 
     DB_PATH = "data.db"
     LOG_PATH = "update.log"
+    DUMP_PATH = r"2023_08_01_osu_files.tar.bz2"
 
     # Setup logging
     log_db = circledb_log_queue(to_console=True, to_file=LOG_PATH)
@@ -72,6 +74,16 @@ if __name__ == "__main__":
         for beatmap_id in missing_ids:
             orm.add_best_rank(DBBestRank(country_code=country_code, beatmap_id=beatmap_id))
         orm.save()
+
+        # Update spinners data from monthly dump
+        data = orm.cur.execute("select id from beatmap where spinners <> 0")
+        id_filter = set(x[0] for x in data)
+
+        # skip aspire maps
+        aspire_maps = {2573166, 2573162, 2573163, 2573167, 2573165, 2628991, 2573161, 2619200, 2571051, 2573164}
+        id_filter = id_filter.difference(aspire_maps)
+
+        update_spinner_from_monthly_dump(DUMP_PATH, orm, id_filter)
 
     log_db.stop()
     log_api.stop()
