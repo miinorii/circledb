@@ -29,16 +29,11 @@ Database schema
 Installation
 -----------
 
-circledb require [circleapi](https://github.com/miinorii/circleapi) to be installed.
-
-```bash
-$ pip install circleapi
-```
-
 Development setup
 ```bash
 $ git clone https://github.com/miinorii/circledb.git
 $ cd circleapi
+$ pip install -r requirements.txt
 $ pip install -e .
 ```
 
