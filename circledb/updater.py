@@ -180,5 +180,23 @@ def update_spinner_from_monthly_dump(dump_path: str, orm: CircleDB, id_filter):
     sql_args = []
     for data in data_as_dicts:
         sql_args.append(list(data.values()))
-    orm.cur.executemany("insert into spinner values(?,?,?,?,?,?,?,?,?,?,?,?)", sql_args)
+    orm.cur.executemany("insert into single_spinner_info values(?,?,?,?,?,?,?,?,?,?,?,?)", sql_args)
+    orm.save()
+
+    data_df = data_df.groupby(["id", "DT", "HR", "EZ"]).agg(
+        pl.min("leeway").alias("min_spinner_leeway"),
+        pl.mean("leeway").alias("avg_spinner_leeway"),
+        pl.max("leeway").alias("max_spinner_leeway"),
+        pl.min("length").alias("min_spinner_length"),
+        pl.mean("length").alias("avg_spinner_length"),
+        pl.max("length").alias("max_spinner_length"),
+        pl.min("at_combo").alias("min_at_spinner_combo"),
+        pl.mean("at_combo").alias("avg_spinner_at_combo"),
+        pl.max("at_combo").alias("max_spinner_at_combo"),
+    )
+    data_as_dicts = data_df.to_dicts()
+    sql_args = []
+    for data in data_as_dicts:
+        sql_args.append(list(data.values()))
+    orm.cur.executemany("insert into beatmap_spinner_info values(?,?,?,?,?,?,?,?,?,?,?,?,?)", sql_args)
     orm.save()
