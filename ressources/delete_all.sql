@@ -4,6 +4,7 @@ delete from best_rank;
 delete from country_lb;
 delete from global_lb;
 delete from score;
-delete from spinner;
+delete from beatmap_spinner_info;
+delete from single_spinner_info;
 delete from user;
 vacuum "main";
