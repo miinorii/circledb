@@ -1,0 +1,10 @@
+#table {
+    padding-top: 10px;
+    height: 100%;
+}
+
+#container {
+    padding: 2%;
+    height: calc(100vh - 50px);
+    width: 100vw;
+}
