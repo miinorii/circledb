@@ -1,9 +1,28 @@
+let currentGrid;
+
+class OsuDirectDownloadRenderer {
+    // gets called once before the renderer is used
+    init(params) {
+        // create the cell
+        this.eGui = document.createElement("div");
+        this.eGui.innerHTML = `
+            <a id="downloadButton" href="${params.value}" class="button is-small" style="vertical-align: 8%;"><i class="fas fa-download"></i></a>
+       `;
+    }
+
+    getGui() {
+        return this.eGui;
+    }
+
+}
+
+
 async function updateDisplay() {
     // General grid settings
     const gridOptions = {
         defaultColDef: {sortable: true, filter: true},
         rowSelection: "multiple",
-        rowMultiSelectWithClick: true,
+        suppressRowClickSelection: true,
         animateRows: true,
         enableCellTextSelection: true,
         ensureDomOrder: true,
@@ -15,7 +34,7 @@ async function updateDisplay() {
     // Create grid
     const eGridDiv = document.getElementById("table");
     eGridDiv.innerHTML = "";
-    new agGrid.Grid(eGridDiv, gridOptions);
+    currentGrid = new agGrid.Grid(eGridDiv, gridOptions);
 
     // Fetch data
     gridOptions.api.showLoadingOverlay();
@@ -24,9 +43,9 @@ async function updateDisplay() {
     const table = document.getElementById("table-select").value;
 
     const params = new URLSearchParams({database: database, table: table}).toString();
-    const response = await fetch("/api/read_table_content?" + params);
+    const response = await fetch("/api/table/read?" + params);
 
-    const tableData = await response.json()
+    const tableData = await response.json();
 
     // Format data
     const columns = [];
@@ -39,9 +58,16 @@ async function updateDisplay() {
             checkboxSelection: (index === 0) ? true : false,
             headerCheckboxSelectionFilteredOnly: true,
             floatingFilter: true,
-            resizable: true
+            resizable: true,
         }
-        columns.push(col_params)
+
+        if (name === "direct") {
+            col_params.floatingFilter = false;
+            col_params.pinned = "right";
+            col_params.cellRenderer = OsuDirectDownloadRenderer;
+        }
+
+        columns.push(col_params);
     })
 
     const rows = [];
@@ -75,4 +101,27 @@ function updateTableList(value){
             }
         }
     }
+}
+
+async function generateCollection(){
+    const database = document.getElementById("db-select").value;
+    const ids = currentGrid.gridOptions.api.getSelectedRows().map((row) => row.id);
+
+    let response = await fetch("/api/collection/generate", {
+        method: "POST",
+        body: JSON.stringify({database: database, ids: ids}),
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+    });
+
+    let collectionBytes = await response.blob();
+    let blobUrl = window.URL.createObjectURL(collectionBytes);
+
+    let aTag = document.getElementById("blobDownload")
+    aTag.href = blobUrl;
+    aTag.download = "collection.db";
+    aTag.click();
+
+    window.URL.revokeObjectURL(blobUrl);
 }
