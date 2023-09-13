@@ -107,7 +107,7 @@ async function generateCollection(){
     const database = document.getElementById("db-select").value;
     const ids = currentGrid.gridOptions.api.getSelectedRows().map((row) => row.id);
 
-    let response = await fetch("/api/collection/generate", {
+    let response = await fetch("/api/collection/create", {
         method: "POST",
         body: JSON.stringify({database: database, ids: ids}),
         headers: {
