@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -9,6 +10,7 @@ from circleutils import Collection
 from datetime import datetime
 import os
 import sqlite3
+import argparse
 
 
 class TableData(BaseModel):
@@ -41,6 +43,18 @@ def read_table_content(database: str, table: str) -> TableData:
     return TableData(columns=col_names, rows=data)
 
 
+def enable_compression(app: FastAPI):
+    app.add_middleware(
+        BrotliMiddleware,
+        quality=4,
+        mode="text",
+        lgwin=22,
+        lgblock=0,
+        minimum_size=400,
+        gzip_fallback=True
+    )
+
+
 ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
 available_databases: list[str] = os.listdir(f"{ROOT_DIR}/db")
 available_tables: dict[str, list[tuple[str]]] = {
@@ -49,17 +63,7 @@ available_tables: dict[str, list[tuple[str]]] = {
 }
 templates = Jinja2Templates(directory="templates")
 
-app = FastAPI()
-app.add_middleware(
-    BrotliMiddleware,
-    quality=4,
-    mode="text",
-    lgwin=22,
-    lgblock=0,
-    minimum_size=400,
-    gzip_fallback=True
-)
-
+app = FastAPI(docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -99,3 +103,13 @@ async def handle_create_collection(post_data: CollectionGenerationRequest) -> Re
     
     collection = Collection(date=date_int, content=content)
     return Response(content=collection.to_bytes(), media_type="binary/octet-stream")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="CircleDB webview")
+    parser.add_argument('--add-compression', help="Add brotli compression", action="store_true")
+    args = parser.parse_args()
+    
+    if args.add_compression:
+        enable_compression(app)
+    
+    uvicorn.run(app, port=60727)
