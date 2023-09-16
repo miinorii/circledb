@@ -18,7 +18,7 @@ class OsuDirectDownloadRenderer {
 
 
 async function updateDisplay() {
-    // General grid settings
+    // Default grid settings
     const gridOptions = {
         defaultColDef: {sortable: true, filter: true},
         rowSelection: "multiple",
@@ -31,7 +31,7 @@ async function updateDisplay() {
         overlayLoadingTemplate: '<span class="ag-overlay-loading-center">Loading ...</span>'
     }
 
-    // Create grid
+    // Init grid
     const eGridDiv = document.getElementById("table");
     eGridDiv.innerHTML = "";
     currentGrid = new agGrid.Grid(eGridDiv, gridOptions);
@@ -47,15 +47,13 @@ async function updateDisplay() {
 
     const tableData = await response.json();
 
-    // Format data
-    const columns = [];
-    tableData.columns.forEach((name, index) => {
-        // Default column settings
+    // Format columns
+    const columns = tableData.columns.map((name, index) => {
         let col_params = {
             field: name, 
             headerName: name,
-            headerCheckboxSelection: (index === 0) ? true : false,
-            checkboxSelection: (index === 0) ? true : false,
+            headerCheckboxSelection: index === 0,
+            checkboxSelection: index === 0,
             headerCheckboxSelectionFilteredOnly: true,
             floatingFilter: true,
             resizable: true,
@@ -67,17 +65,16 @@ async function updateDisplay() {
             col_params.cellRenderer = OsuDirectDownloadRenderer;
         }
 
-        columns.push(col_params);
-    })
-
-    const rows = [];
-    tableData.rows.forEach((row) => {
-        let row_data = {};
-        row.forEach((value, index) => {
-            row_data[tableData.columns[index]] = value;
-        });
-        rows.push(row_data);
+        return col_params;
     });
+
+    // Format rows
+    const rows = tableData.rows.map((row) =>
+        row.reduce((row_data, value, index) => {
+            row_data[tableData.columns[index]] = value;
+            return row_data;
+        }, {})
+    );
 
     gridOptions.api.hideOverlay();
     gridOptions.api.setColumnDefs(columns);
@@ -86,9 +83,12 @@ async function updateDisplay() {
 }
 
 function updateTableList(value){
+    let selectorAndButtonContainer = document.getElementById("table-select-and-button");
+    selectorAndButtonContainer.style.display = "inline";
+
     let selector = document.getElementById("table-select");
     selector.value = "";
-    selector.disabled = false;
+    
 
     let childrens = selector.children;
     for (let key in childrens){
@@ -104,8 +104,20 @@ function updateTableList(value){
 }
 
 async function generateCollection(){
+    const colNames = currentGrid.gridOptions.columnDefs.reduce((names, colDef) => {
+        names.push(colDef.field);
+        return names;
+    }, []);
+
+    let idColName;
+    if (colNames.includes("checksum")) {
+        idColName = (colNames.includes("beatmap_id")) ? "beatmap_id" : "id"; 
+    } else {
+        return;
+    }
+
     const database = document.getElementById("db-select").value;
-    const ids = currentGrid.gridOptions.api.getSelectedRows().map((row) => row.id);
+    const ids = currentGrid.gridOptions.api.getSelectedRows().map((row) => row[idColName]);
 
     let response = await fetch("/api/collection/create", {
         method: "POST",
