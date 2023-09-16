@@ -9,12 +9,12 @@
     />
     <title>CircleDB webview</title>
 
-    <script src="{{ url_for('static', path='/ag-grid-community.min.js') }}"></script>
-    <script src="{{ url_for('static', path='/script.js') }}"></script>
+    <script src="/static/ag-grid-community.min.js"></script>
+    <script src="/static/script.js"></script>
 
-    <link id="favicon" rel="icon" type="image/x-icon" href="{{ url_for('static', path='/database_icon_x48.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='/bulma.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+    <link id="favicon" rel="icon" type="image/x-icon" href="/static/database_icon_x48.png">
+    <link rel="stylesheet" href="/static/bulma.min.css">
+    <link rel="stylesheet" href="/static/style.css">
   </head>
   <body>
     <div id="container">
@@ -28,7 +28,7 @@
           </select>
         </div>
         <span class="icon is-left">
-          <img src="{{ url_for('static', path='/database-2-fill.png') }}" width="65%">
+          <img src="/static/database-2-fill.png" width="65%">
         </span>
       </span>
 
@@ -45,7 +45,7 @@
             </select>
           </div>
           <span class="icon is-left">
-            <img src="{{ url_for('static', path='/table-fill.png') }}" width="60%">
+            <img src="/static/table-fill.png" width="60%">
           </span>
         </span>
         <button class="button" onclick="generateCollection();">collection.db</button>

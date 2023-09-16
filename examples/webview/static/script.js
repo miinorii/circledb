@@ -6,7 +6,9 @@ class OsuDirectDownloadRenderer {
         // create the cell
         this.eGui = document.createElement("div");
         this.eGui.innerHTML = `
-            <a id="downloadButton" href="${params.value}" class="button is-small" style="vertical-align: 8%;"><i class="fas fa-download"></i></a>
+            <a id="downloadButton" href="${params.value}">
+                <img src="/static/download-fill.png" width="35%" style="vertical-align: middle;">
+            </a>
        `;
     }
 
