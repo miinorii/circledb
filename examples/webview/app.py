@@ -27,7 +27,7 @@ def read_tables_name(db_path: str) -> list[tuple[str]]:
     with sqlite3.connect(db_path) as db:
         cur = db.cursor()
         cur.execute("select type, name from sqlite_master where type in ('table', 'view');")
-        return cur.fetchall()
+        return sorted(cur.fetchall(), key=lambda tup: tup[1])
 
 
 @lru_cache(maxsize=4)
