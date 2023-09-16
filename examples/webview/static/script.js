@@ -58,6 +58,10 @@ async function updateDisplay() {
             checkboxSelection: index === 0,
             headerCheckboxSelectionFilteredOnly: true,
             floatingFilter: true,
+            filterParams: {
+                inRangeInclusive: true,
+                maxNumConditions: 5
+            },
             resizable: true,
         }
 
