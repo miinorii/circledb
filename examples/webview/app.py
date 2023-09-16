@@ -51,13 +51,13 @@ templates = Jinja2Templates(directory="templates")
 
 app = FastAPI()
 app.add_middleware(
-  BrotliMiddleware,
-  quality=4,
-  mode="text",
-  lgwin=22,
-  lgblock=0,
-  minimum_size=400,
-  gzip_fallback=True
+    BrotliMiddleware,
+    quality=4,
+    mode="text",
+    lgwin=22,
+    lgblock=0,
+    minimum_size=400,
+    gzip_fallback=True
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
