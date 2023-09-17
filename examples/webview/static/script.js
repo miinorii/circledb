@@ -50,13 +50,19 @@ function renderCellSelection(gridEvent, color) {
         1
     )
 
-    const rowNodeRange = rowIdRange.map((index) => gridEvent.api.getRowNode(index));
+    const rowNodeRange = [];
+    gridEvent.api.forEachNodeAfterFilterAndSort((rowNode, index) => {
+        if (rowIdRange.includes(rowNode.rowIndex)) {
+            rowNodeRange.push(rowNode);
+        } 
+    });
 
     const colNameRange = arrayRange(
         Math.min(startColIndex, stopColIndex), 
         Math.max(startColIndex, stopColIndex),
         1
     ).map((index) => columnsName[index]);
+
 
     gridColumns.filter(
         (col) => colNameRange.includes(col.colId)
@@ -232,4 +238,14 @@ document.addEventListener("mousedown", (e) => {
 document.addEventListener("mouseup", (e) => {
     if (e.button === 0)
         mouseDown = false;
+});
+
+document.addEventListener("DOMContentLoaded", (e) => {
+    const eGridDiv = document.getElementById("table");
+
+    eGridDiv.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+            console.log("ctrl+c")
+        }
+    });
 });
