@@ -43,11 +43,13 @@ function renderCellSelection(gridEvent, color) {
     const stopColIndex = columnsName.indexOf(cellSelectStopPos.colId);
     const stopRowIndex = cellSelectStopPos.rowId;
 
-    const rowNodeRange = arrayRange(
+    const rowIdRange = arrayRange(
         Math.min(startRowIndex, stopRowIndex), 
         Math.max(startRowIndex, stopRowIndex),
         1
-    ).map((index) => gridEvent.api.getRowNode(index));
+    )
+
+    const rowNodeRange = rowIdRange.map((index) => gridEvent.api.getRowNode(index));
 
     const colNameRange = arrayRange(
         Math.min(startColIndex, stopColIndex), 
@@ -58,7 +60,13 @@ function renderCellSelection(gridEvent, color) {
     gridColumns.filter(
         (col) => colNameRange.includes(col.colId)
     ).forEach((col) => {
-        col.colDef.cellStyle = { "background-color": color };
+        col.colDef.cellStyle = (params) => {
+            if (colNameRange.includes(params.colDef.field) && rowIdRange.includes(params.rowIndex)){
+                return {backgroundColor: color};
+            } else {
+                return {backgroundColor: "#ffffff"};
+            }
+        };
     });
 
     gridEvent.api.refreshCells({
