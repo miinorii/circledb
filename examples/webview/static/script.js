@@ -4,6 +4,7 @@ const cellSelectStartPos = {rowId: null, colId: null};
 const cellSelectStopPos = {rowId: null, colId: null};
 
 
+
 class OsuDirectDownloadRenderer {
     // gets called once before the renderer is used
     init(params) {
@@ -77,7 +78,7 @@ function renderCellSelection(gridEvent, color) {
 }
 
 function handleSelectionEnd(e){
-    if (mouseDown){
+    if (mouseDown && cellSelectStartPos.rowId != null && cellSelectStopPos.rowId != null){
         renderCellSelection(e, "#ffffff");
         cellSelectStopPos.rowId = e.rowIndex;
         cellSelectStopPos.colId = e.column.colDef.field;
