@@ -1,4 +1,8 @@
 let currentGrid;
+let mouseDown = false;
+const cellSelectStartPos = {rowId: null, colId: null};
+const cellSelectStopPos = {rowId: null, colId: null};
+
 
 class OsuDirectDownloadRenderer {
     // gets called once before the renderer is used
@@ -18,6 +22,71 @@ class OsuDirectDownloadRenderer {
 
 }
 
+function arrayRange(start, stop, step) {
+    return Array.from(
+        { length: (stop - start) / step + 1 },
+        (value, index) => start + index * step
+    );
+}
+
+function renderCellSelection(gridEvent, color) {
+    const gridColumns = gridEvent.columnApi.getAllGridColumns();
+
+    const columnsName = gridColumns.reduce((colList, col) => {
+        colList.push(col.colId);
+        return colList;
+    }, []);
+
+    const startColIndex = columnsName.indexOf(cellSelectStartPos.colId);
+    const startRowIndex = cellSelectStartPos.rowId;
+
+    const stopColIndex = columnsName.indexOf(cellSelectStopPos.colId);
+    const stopRowIndex = cellSelectStopPos.rowId;
+
+    const rowNodeRange = arrayRange(
+        Math.min(startRowIndex, stopRowIndex), 
+        Math.max(startRowIndex, stopRowIndex),
+        1
+    ).map((index) => gridEvent.api.getRowNode(index));
+
+    const colNameRange = arrayRange(
+        Math.min(startColIndex, stopColIndex), 
+        Math.max(startColIndex, stopColIndex),
+        1
+    ).map((index) => columnsName[index]);
+
+    gridColumns.filter(
+        (col) => colNameRange.includes(col.colId)
+    ).forEach((col) => {
+        col.colDef.cellStyle = { "background-color": color };
+    });
+
+    gridEvent.api.refreshCells({
+        force: true,
+        columns: colNameRange,
+        rowNodes: rowNodeRange
+    });
+}
+
+function handleSelectionEnd(e){
+    if (mouseDown){
+        renderCellSelection(e, "#ffffff");
+        cellSelectStopPos.rowId = e.rowIndex;
+        cellSelectStopPos.colId = e.column.colDef.field;
+        renderCellSelection(e, "#b7e4ff");
+    }
+}
+
+function handleSelectionStart(e){
+    if (cellSelectStartPos.rowId != null && cellSelectStopPos.rowId != null) {
+        renderCellSelection(e, "#ffffff");
+    }
+    cellSelectStartPos.rowId = e.rowIndex;
+    cellSelectStartPos.colId = e.column.colDef.field;
+    cellSelectStopPos.rowId = e.rowIndex;
+    cellSelectStopPos.colId = e.column.colDef.field;
+    renderCellSelection(e, "#b7e4ff");
+}
 
 async function updateDisplay() {
     // Default grid settings
@@ -26,11 +95,13 @@ async function updateDisplay() {
         rowSelection: "multiple",
         suppressRowClickSelection: true,
         animateRows: true,
-        enableCellTextSelection: true,
-        ensureDomOrder: true,
+        // enableCellTextSelection: true,
+        // ensureDomOrder: true,
         suppressColumnVirtualisation: true,
         pagination: true,
-        overlayLoadingTemplate: '<span class="ag-overlay-loading-center">Loading ...</span>'
+        overlayLoadingTemplate: '<span class="ag-overlay-loading-center">Loading ...</span>',
+        onCellMouseOver: handleSelectionEnd,
+        onCellMouseDown: handleSelectionStart
     }
 
     // Init grid
@@ -143,3 +214,13 @@ async function generateCollection(){
 
     window.URL.revokeObjectURL(blobUrl);
 }
+
+document.addEventListener("mousedown", (e) => {
+    if (e.button === 0)
+        mouseDown = true;
+});
+
+document.addEventListener("mouseup", (e) => {
+    if (e.button === 0)
+        mouseDown = false;
+});
