@@ -30,6 +30,45 @@ function arrayRange(start, stop, step) {
     );
 }
 
+function cellSelectionToClipboard() {
+    const gridColumns = currentGrid.gridOptions.columnApi.getAllGridColumns();
+
+    const columnsName = gridColumns.reduce((colList, col) => {
+        colList.push(col.colId);
+        return colList;
+    }, []);
+
+    const startColIndex = columnsName.indexOf(cellSelectStartPos.colId);
+    const startRowIndex = cellSelectStartPos.rowId;
+
+    const stopColIndex = columnsName.indexOf(cellSelectStopPos.colId);
+    const stopRowIndex = cellSelectStopPos.rowId;
+
+    const rowIdRange = arrayRange(
+        Math.min(startRowIndex, stopRowIndex), 
+        Math.max(startRowIndex, stopRowIndex),
+        1
+    )
+
+    const colNameRange = arrayRange(
+        Math.min(startColIndex, stopColIndex), 
+        Math.max(startColIndex, stopColIndex),
+        1
+    ).map((index) => columnsName[index]);
+
+    const clipboardData = [];
+    currentGrid.gridOptions.api.forEachNodeAfterFilterAndSort((rowNode, index) => {
+        if (rowIdRange.includes(rowNode.rowIndex)) {
+            const rowData = [];
+            colNameRange.forEach((colName) => {
+                rowData.push(rowNode.data[colName]);
+            });
+            clipboardData.push(rowData.join("\t"));
+        } 
+    });
+    navigator.clipboard.writeText(clipboardData.join("\n"))
+}
+
 function renderCellSelection(gridEvent, color) {
     const gridColumns = gridEvent.columnApi.getAllGridColumns();
 
@@ -245,7 +284,7 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
     eGridDiv.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "c") {
-            console.log("ctrl+c")
+            cellSelectionToClipboard();
         }
     });
 });
