@@ -1,5 +1,5 @@
 import concurrent.futures
-from circleapi import ApiV2, GameMode, ScoreScope, Score, BeatmapScores, Beatmaps
+from circleapi import ApiV2, Ruleset, ScoreScope, Score, BeatmapScores, BeatmapsExtended
 from circleutils import OSUFile
 import tarfile
 from .circledb import CircleDB, DBBestRank
@@ -29,7 +29,7 @@ def update_beatmap_threadpool(api: ApiV2,
             current_batch = futures.pop(future)
             completed += 1
             try:
-                data: Beatmaps = future.result()
+                data: BeatmapsExtended = future.result()
             except Exception as exc:
                 failed += current_batch
                 logger.error(f"[  \033[1;31mERROR\033[0m  ] An exception occurred, {current_batch=}", exc_info=exc)
@@ -44,7 +44,7 @@ def update_beatmap_threadpool(api: ApiV2,
 def update_lb_threadpool(api: ApiV2,
                           orm: CircleDB,
                           beatmap_ids: list[int],
-                          mode: GameMode,
+                          mode: Ruleset,
                           scope: ScoreScope,
                           skip_if_in_db=True,
                           max_threads=8) -> list[int]:
@@ -86,7 +86,7 @@ def update_lb_threadpool(api: ApiV2,
 def update_best_rank_from_score_id_threadpool(api: ApiV2,
                           orm: CircleDB,
                           score_ids: list[int],
-                          mode: GameMode,
+                          mode: Ruleset,
                           max_threads=8) -> list[int]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads, thread_name_prefix="pool") as pool:
         futures_to_scores = {

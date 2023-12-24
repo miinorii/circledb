@@ -1,2 +1,3 @@
-circleapi>=2023.8.5
-circleutils>=2023.8.5
+circleapi==2023.12.24
+circleutils==2023.8.5
+tzdata

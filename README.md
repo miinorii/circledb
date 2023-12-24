@@ -32,7 +32,7 @@ Installation
 Development setup
 ```bash
 $ git clone https://github.com/miinorii/circledb.git
-$ cd circleapi
+$ cd circledb
 $ pip install -r requirements.txt
 $ pip install -e .
 ```

@@ -1,7 +1,7 @@
 import threading
 from datetime import datetime
 import sqlite3
-from circleapi import Beatmap, Beatmaps, BeatmapScores, Beatmapset, Score, UserCompact
+from circleapi import BeatmapExtended, BeatmapsExtended, BeatmapScores, BeatmapsetExtended, Score, User
 from typing import Literal
 from zoneinfo import ZoneInfo
 from .models import DBBestRank
@@ -83,7 +83,7 @@ class CircleDB:
         """
         self.add_to_queue(query, tuple())
 
-    def add_beatmapset(self, beatmapset: Beatmapset, on_conflict: Literal["error", "ignore", "replace"]="error"):
+    def add_beatmapset(self, beatmapset: BeatmapsetExtended, on_conflict: Literal["error", "ignore", "replace"]="error"):
         args = (
             beatmapset.id,
             beatmapset.title,
@@ -114,7 +114,7 @@ class CircleDB:
                 query = f"insert into beatmapset values ({','.join(['?']*len(args))})"
         self.add_to_queue(query, args)
 
-    def add_beatmap(self, beatmap: Beatmap, on_conflict: Literal["error", "ignore", "replace"]="error"):
+    def add_beatmap(self, beatmap: BeatmapExtended, on_conflict: Literal["error", "ignore", "replace"]="error"):
         self.add_beatmapset(beatmap.beatmapset, on_conflict=on_conflict)
         args = (
             beatmap.id,
@@ -148,11 +148,11 @@ class CircleDB:
                 query = f"insert into beatmap values ({','.join(['?']*len(args))})"
         self.add_to_queue(query, args)
 
-    def add_beatmaps(self, beatmaps: Beatmaps, on_conflict: Literal["error", "ignore", "replace"]="error"):
+    def add_beatmaps(self, beatmaps: BeatmapsExtended, on_conflict: Literal["error", "ignore", "replace"]="error"):
         for beatmap in beatmaps.beatmaps:
             self.add_beatmap(beatmap, on_conflict=on_conflict)
 
-    def add_user(self, user: UserCompact, on_conflict: Literal["error", "ignore", "replace"]="error"):
+    def add_user(self, user: User, on_conflict: Literal["error", "ignore", "replace"]="error"):
         args = (
             user.id,
             user.username,
@@ -215,11 +215,11 @@ class CircleDB:
                lb: BeatmapScores,
                on_conflict: Literal["error", "ignore", "replace"]="error"):
         for index, score in enumerate(lb.scores):
-            self.add_score(score, lb.args.beatmap_id, on_conflict=on_conflict)
+            self.add_score(score, lb.beatmap_id, on_conflict=on_conflict)
             rank = index + 1
-            match lb.args.type:
+            match lb.scope:
                 case "global":
-                    args = (lb.args.beatmap_id, rank, score.id)
+                    args = (lb.beatmap_id, rank, score.id)
                     match on_conflict:
                         case "ignore":
                             query = f"insert or ignore into global_lb values ({','.join(['?'] * len(args))})"
@@ -228,7 +228,7 @@ class CircleDB:
                         case _:
                             query = f"insert into global_lb values ({','.join(['?'] * len(args))})"
                 case "country":
-                    args = (score.user.country.code, lb.args.beatmap_id, rank, score.id)
+                    args = (score.user.country.code, lb.beatmap_id, rank, score.id)
                     match on_conflict:
                         case "ignore":
                             query = f"insert or ignore into country_lb values ({','.join(['?'] * len(args))})"

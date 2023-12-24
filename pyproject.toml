@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "circledb"
+version = "2023.12.17"
+authors = [
+  { name="miinorii" },
+]
+dependencies = [
+    "circleapi==2023.12.24.2",
+    "circleutils==2023.8.5",
+    "tzdata"
+]
+keywords = ["osu!", "database", "orm"]
+description = "A set of tools to query, store and reuse data from osu! api."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/miinorii/circledb"
+Issues = "https://github.com/miinorii/circledb/issues"

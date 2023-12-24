@@ -1,6 +1,7 @@
 circledb.egg-info/
 circledb/__pycache__/
 .idea/
+venv/
 examples/.env
 examples/data.db
 examples/user_token
