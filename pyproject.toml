@@ -9,7 +9,7 @@ authors = [
   { name="miinorii" },
 ]
 dependencies = [
-    "circleapi==2023.12.24.3",
+    "circleapi==2023.12.25",
     "circleutils==2023.8.5",
     "tzdata"
 ]
